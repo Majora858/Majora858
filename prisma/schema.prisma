@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  grade        Int       @default(10)
+  xp           Int       @default(0)
+  streak       Int       @default(0)
+  lastStudyAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  contents        Content[]         @relation("ContentAuthor")
+  flashcardSets    FlashcardSet[]   @relation("SetAuthor")
+  quizzes          Quiz[]           @relation("QuizAuthor")
+  bookmarks        Bookmark[]
+  cardProgress     CardProgress[]
+  quizAttempts     QuizAttempt[]
+  chatMessages     ChatMessage[]
+  contentProgress  ContentProgress[]
+}
+
+model Subject {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  icon  String
+  color String
+  order Int    @default(0)
+
+  contents      Content[]
+  flashcardSets FlashcardSet[]
+  quizzes       Quiz[]
+}
+
+model Content {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  summary   String
+  body      String
+  grade     Int
+  minutes   Int      @default(5)
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("ContentAuthor", fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+
+  bookmarks Bookmark[]
+  progress  ContentProgress[]
+}
+
+model ContentProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  completed Boolean  @default(false)
+  updatedAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+}
+
+model FlashcardSet {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  grade       Int
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation("SetAuthor", fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+
+  cards Flashcard[]
+}
+
+model Flashcard {
+  id    String @id @default(cuid())
+  setId String
+  set   FlashcardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  front String
+  back  String
+  order Int    @default(0)
+
+  progress CardProgress[]
+}
+
+model CardProgress {
+  id         String    @id @default(cuid())
+  userId     String
+  cardId     String
+  box        Int       @default(1)
+  interval   Int       @default(0)
+  reps       Int       @default(0)
+  dueAt      DateTime  @default(now())
+  lastResult String?
+  updatedAt  DateTime  @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Flashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+}
+
+model Quiz {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  grade       Int
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation("QuizAuthor", fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+
+  questions Question[]
+  attempts  QuizAttempt[]
+}
+
+model Question {
+  id          String  @id @default(cuid())
+  quizId      String
+  quiz        Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text        String
+  explanation String?
+  order       Int     @default(0)
+
+  choices Choice[]
+}
+
+model Choice {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  correct    Boolean  @default(false)
+  order      Int      @default(0)
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
