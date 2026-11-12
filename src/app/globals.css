@@ -8,11 +8,13 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 body {
   background-color: #f7f8fc;
   color: #1a1a2e;
+  overscroll-behavior-y: none;
 }
 
 .prose-lernio h1 {
